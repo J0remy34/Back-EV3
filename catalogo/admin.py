@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Categoria, Objeto, PerfilUsuario
 
 
@@ -72,12 +73,22 @@ class ObjetoAdmin(admin.ModelAdmin):
 
 @admin.register(PerfilUsuario)
 class PerfilUsuarioAdmin(admin.ModelAdmin):
-    list_display = ("usuario", "rut", "telefono", "rol")
+    list_display = (
+        "usuario",
+        "rut",
+        "telefono",
+        "rol",
+    )
     list_filter = ("rol",)
-    search_fields = ("usuario__username", "rut", "telefono")
-    list_editable = ("rol",)
+    search_fields = (
+        "usuario__username",
+        "rut",
+        "telefono",
+    )
     list_per_page = 20
 
+    # El rol se cambia desde el formulario de edición,
+    # no mediante edición rápida en la lista.
     fieldsets = (
         ("Información del usuario", {
             "fields": ("usuario",),

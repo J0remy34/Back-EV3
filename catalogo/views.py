@@ -1,4 +1,3 @@
-
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.contrib import messages
@@ -11,7 +10,33 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from .forms import ObjetoForm, RegistroUsuarioForm
-from .models import Categoria, Objeto
+from .models import Categoria, Objeto, PerfilUsuario
+
+
+# =========================
+# COMPROBACIÓN DE ROLES
+# =========================
+
+def obtener_rol(usuario):
+    if not usuario.is_authenticated:
+        return None
+
+    # Los superusuarios existentes conservan acceso de dueño.
+    if usuario.is_superuser:
+        return "DUENO"
+
+    try:
+        return usuario.perfil.rol
+    except PerfilUsuario.DoesNotExist:
+        return None
+
+
+def es_dueno(usuario):
+    return obtener_rol(usuario) == "DUENO"
+
+
+def es_administrador(usuario):
+    return obtener_rol(usuario) in ("DUENO", "ADMINISTRADOR")
 
 
 # =========================
@@ -101,7 +126,9 @@ def obtener_carrito(request):
 
     if not isinstance(carrito, dict):
         carrito = {}
-        request.session["carrito"] = carrito
+        request.session["carrito"] = {}
+        request.session.modified = True
+        carrito = {}
 
     return carrito
 
@@ -127,15 +154,30 @@ def agregar_carrito(request, objeto_id):
     except (ValueError, TypeError):
         cantidad = 1
 
+    try:
+        cantidad_actual = int(carrito.get(clave, 0))
+    except (ValueError, TypeError):
+        cantidad_actual = 0
+
     if cantidad < 1:
-        messages.error(request, "La cantidad debe ser mayor que cero.")
-    elif carrito.get(clave, 0) + cantidad > objeto.stock:
-        messages.error(request, "No hay stock suficiente para esa cantidad.")
+        messages.error(
+            request,
+            "La cantidad debe ser mayor que cero.",
+        )
+    elif cantidad_actual + cantidad > objeto.stock:
+        messages.error(
+            request,
+            "No hay stock suficiente para esa cantidad.",
+        )
     else:
-        carrito[clave] = carrito.get(clave, 0) + cantidad
+        carrito[clave] = cantidad_actual + cantidad
         request.session["carrito"] = carrito
         request.session.modified = True
-        messages.success(request, f"{objeto.nombre} se añadió al carrito.")
+
+        messages.success(
+            request,
+            f"{objeto.nombre} se añadió al carrito.",
+        )
 
     referer = request.META.get("HTTP_REFERER")
     if referer:
@@ -148,6 +190,7 @@ def ver_carrito(request):
     carrito = obtener_carrito(request)
     elementos = []
     subtotal = Decimal("0.00")
+    carrito_corregido = {}
 
     for clave, cantidad in carrito.items():
         try:
@@ -164,10 +207,12 @@ def ver_carrito(request):
             activo=True,
         ).first()
 
-        if objeto is None:
+        if objeto is None or objeto.stock <= 0:
             continue
 
         cantidad = min(cantidad, objeto.stock)
+        carrito_corregido[str(objeto.id)] = cantidad
+
         precio_total = objeto.precio * cantidad
         subtotal += precio_total
 
@@ -176,6 +221,10 @@ def ver_carrito(request):
             "cantidad": cantidad,
             "subtotal": precio_total,
         })
+
+    if carrito_corregido != carrito:
+        request.session["carrito"] = carrito_corregido
+        request.session.modified = True
 
     iva = (subtotal * Decimal("0.19")).quantize(
         Decimal("0.01"),
@@ -213,9 +262,15 @@ def actualizar_carrito(request, objeto_id):
 
     if cantidad <= 0:
         carrito.pop(clave, None)
-        messages.info(request, "Objeto eliminado del carrito.")
+        messages.info(
+            request,
+            "Objeto eliminado del carrito.",
+        )
     elif cantidad > objeto.stock:
-        messages.error(request, "La cantidad supera el stock disponible.")
+        messages.error(
+            request,
+            "La cantidad supera el stock disponible.",
+        )
     else:
         carrito[clave] = cantidad
         messages.success(request, "Cantidad actualizada.")
@@ -234,7 +289,11 @@ def eliminar_carrito(request, objeto_id):
     request.session["carrito"] = carrito
     request.session.modified = True
 
-    messages.success(request, "Objeto eliminado del carrito.")
+    messages.success(
+        request,
+        "Objeto eliminado del carrito.",
+    )
+
     return redirect("ver_carrito")
 
 
@@ -244,6 +303,7 @@ def vaciar_carrito(request):
     request.session.modified = True
 
     messages.success(request, "El carrito está vacío.")
+
     return redirect("ver_carrito")
 
 
@@ -264,18 +324,23 @@ def login_usuario(request):
         if form.is_valid():
             usuario = form.get_user()
             login(request, usuario)
-            messages.success(request, "Has iniciado sesión correctamente.")
+
+            messages.success(
+                request,
+                "Has iniciado sesión correctamente.",
+            )
 
             destino = request.GET.get("next", "")
+
             if destino.startswith("/") and not destino.startswith("//"):
                 return redirect(destino)
 
             return redirect("lista_objetos")
-        else:
-            messages.error(
-                request,
-                "No se pudo iniciar sesión. Revisa tu usuario y contraseña.",
-            )
+
+        messages.error(
+            request,
+            "No se pudo iniciar sesión. Revisa tu usuario y contraseña.",
+        )
     else:
         form = AuthenticationForm(request)
 
@@ -297,17 +362,20 @@ def registro_usuario(request):
         form = RegistroUsuarioForm(request.POST)
 
         if form.is_valid():
+            # RegistroUsuarioForm debe crear siempre un CLIENTE.
             form.save()
+
             messages.success(
                 request,
                 "¡Tu cuenta se creó correctamente! Ya puedes iniciar sesión.",
             )
+
             return redirect("login")
-        else:
-            messages.error(
-                request,
-                "Revisa los campos marcados para corregir el formulario.",
-            )
+
+        messages.error(
+            request,
+            "Revisa los campos marcados para corregir el formulario.",
+        )
     else:
         form = RegistroUsuarioForm()
 
@@ -326,17 +394,16 @@ def logout_usuario(request):
 
 
 # =========================
-# ADMINISTRACIÓN DE OBJETOS
+# GESTIÓN DE PRODUCTOS
+# Dueño y administrador
 # =========================
-
-def es_administrador(usuario):
-    return usuario.is_authenticated and usuario.is_staff
-
 
 @login_required
 @user_passes_test(es_administrador)
 def gestionar_objetos(request):
-    objetos = Objeto.objects.select_related("categoria").order_by("nombre")
+    objetos = Objeto.objects.select_related(
+        "categoria"
+    ).order_by("nombre")
 
     return render(
         request,
@@ -349,14 +416,14 @@ def gestionar_objetos(request):
 @user_passes_test(es_administrador)
 def crear_objeto(request):
     if request.method == "POST":
-        form = ObjetoForm(
-            request.POST,
-            request.FILES,
-        )
+        form = ObjetoForm(request.POST, request.FILES)
 
         if form.is_valid():
             form.save()
-            messages.success(request, "Objeto creado correctamente.")
+            messages.success(
+                request,
+                "Objeto creado correctamente.",
+            )
             return redirect("gestionar_objetos")
     else:
         form = ObjetoForm()
@@ -385,7 +452,10 @@ def editar_objeto(request, objeto_id):
 
         if form.is_valid():
             form.save()
-            messages.success(request, "Objeto actualizado correctamente.")
+            messages.success(
+                request,
+                "Objeto actualizado correctamente.",
+            )
             return redirect("gestionar_objetos")
     else:
         form = ObjetoForm(instance=objeto)
@@ -409,5 +479,9 @@ def eliminar_objeto(request, objeto_id):
     objeto.activo = False
     objeto.save(update_fields=["activo"])
 
-    messages.success(request, "Objeto desactivado correctamente.")
+    messages.success(
+        request,
+        "Objeto desactivado correctamente.",
+    )
+
     return redirect("gestionar_objetos")
