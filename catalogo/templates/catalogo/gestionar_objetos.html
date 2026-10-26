@@ -1,0 +1,89 @@
+{% extends "catalogo/base.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div>
+            <h1>Gestión de objetos</h1>
+            <p class="text-secondary">Administra el catálogo de GameLoot.</p>
+        </div>
+
+        <a href="{% url 'crear_objeto' %}" class="btn btn-warning">
+            + Registrar objeto
+        </a>
+    </div>
+
+    {% if objetos %}
+        <div class="table-responsive">
+            <table class="table table-dark table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Nombre</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Activo</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for objeto in objetos %}
+                    <tr>
+                        <td>{{ objeto.codigo }}</td>
+                        <td>{{ objeto.nombre }}</td>
+                        <td>{{ objeto.categoria.nombre }}</td>
+                        <td>${{ objeto.precio|floatformat:0 }}</td>
+                        <td>{{ objeto.stock }}</td>
+                        <td>{{ objeto.get_estado_display }}</td>
+                        <td>
+                            {% if objeto.activo %}
+                                <span class="badge bg-success">Sí</span>
+                            {% else %}
+                                <span class="badge bg-secondary">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-2">
+                                <a
+                                    href="{% url 'editar_objeto' objeto.id %}"
+                                    class="btn btn-sm btn-outline-warning"
+                                >
+                                    Editar
+                                </a>
+
+                                {% if objeto.activo %}
+                                <form
+                                    method="post"
+                                    action="{% url 'eliminar_objeto' objeto.id %}"
+                                    onsubmit="return confirm('¿Deseas desactivar este objeto?');"
+                                >
+                                    {% csrf_token %}
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-outline-danger"
+                                    >
+                                        Desactivar
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-secondary">
+            Todavía no hay objetos registrados.
+        </div>
+    {% endif %}
+
+    <a href="{% url 'lista_objetos' %}" class="btn btn-outline-light mt-3">
+        Volver al catálogo
+    </a>
+</div>
+{% endblock %}

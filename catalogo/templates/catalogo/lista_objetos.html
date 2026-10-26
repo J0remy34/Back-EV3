@@ -1,0 +1,308 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}Catálogo | GameLoot{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+    <style>
+        .busqueda-panel {
+            background: #1c1729;
+            border: 1px solid #403253;
+            border-radius: 20px;
+            padding: 28px;
+            margin-bottom: 30px;
+        }
+
+        .busqueda-panel label {
+            display: block;
+            margin-bottom: 9px;
+            font-weight: 500;
+        }
+
+        .busqueda-panel .form-control,
+        .busqueda-panel .form-select {
+            background-color: #171321;
+            color: #fff;
+            border: 1px solid #514064;
+            min-height: 47px;
+        }
+
+        .busqueda-panel .form-select option {
+            background: #171321;
+            color: #fff;
+        }
+
+        .btn-game {
+            background: #a78bfa;
+            color: #171321;
+            border: 0;
+            font-weight: 600;
+        }
+
+        .btn-game:hover {
+            background: #c4b5fd;
+            color: #171321;
+        }
+
+        .objeto-card {
+            height: 100%;
+            overflow: hidden;
+            background: #1c1729;
+            border: 1px solid #403253;
+            border-radius: 18px;
+            transition: transform .2s, border-color .2s;
+        }
+
+        .objeto-card:hover {
+            transform: translateY(-4px);
+            border-color: #a78bfa;
+        }
+
+        .objeto-imagen {
+            height: 210px;
+            width: 100%;
+            object-fit: cover;
+            background: #171321;
+        }
+
+        .objeto-placeholder {
+            height: 210px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #171321;
+            font-size: 55px;
+        }
+
+        .precio-game {
+            color: #c4b5fd;
+            font-size: 1.35rem;
+            font-weight: 700;
+        }
+
+        .sin-resultados {
+            background: #1c1729;
+            border: 1px solid #403253;
+            border-radius: 20px;
+            padding: 55px 20px;
+            text-align: center;
+        }
+
+        .paginacion-game .page-link {
+            background: #1c1729;
+            color: #c4b5fd;
+            border-color: #403253;
+        }
+
+        .paginacion-game .active .page-link {
+            background: #a78bfa;
+            color: #171321;
+            border-color: #a78bfa;
+        }
+    </style>
+
+    <form method="get" class="busqueda-panel">
+        <div class="row g-3 align-items-end">
+
+            <div class="col-12 col-lg-5">
+                <label for="busqueda">Buscar objeto</label>
+                <input
+                    id="busqueda"
+                    type="search"
+                    name="q"
+                    class="form-control"
+                    placeholder="Nombre, código o descripción..."
+                    value="{{ busqueda }}"
+                >
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-4">
+                <label for="categoria">Categoría</label>
+                <select id="categoria" name="categoria" class="form-select">
+                    <option value="">Todas las categorías</option>
+
+                    {% for categoria in categorias %}
+                        <option
+                            value="{{ categoria.id }}"
+                            {% if categoria_seleccionada == categoria.id|stringformat:"s" %}selected{% endif %}
+                        >
+                            {{ categoria.nombre }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-6 col-lg-3">
+                <label for="orden">Ordenar por</label>
+                <select id="orden" name="orden" class="form-select">
+                    <option value="nombre" {% if orden_seleccionado == "nombre" %}selected{% endif %}>
+                        Nombre
+                    </option>
+                    <option value="nombre_desc" {% if orden_seleccionado == "nombre_desc" %}selected{% endif %}>
+                        Nombre inverso
+                    </option>
+                    <option value="precio" {% if orden_seleccionado == "precio" %}selected{% endif %}>
+                        Precio: menor a mayor
+                    </option>
+                    <option value="precio_desc" {% if orden_seleccionado == "precio_desc" %}selected{% endif %}>
+                        Precio: mayor a menor
+                    </option>
+                </select>
+            </div>
+
+            <div class="col-12 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-game px-4 py-2">
+                    Buscar objetos
+                </button>
+
+                <a href="{% url 'lista_objetos' %}" class="btn btn-outline-light px-4 py-2">
+                    Limpiar
+                </a>
+            </div>
+        </div>
+    </form>
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <h2 class="mb-0">Objetos disponibles</h2>
+        <span class="text-secondary">
+            {{ objetos.paginator.count }} resultado{{ objetos.paginator.count|pluralize }}
+        </span>
+    </div>
+
+    {% if objetos %}
+        <div class="row g-4">
+            {% for objeto in objetos %}
+                <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                    <div class="objeto-card">
+
+                        <a
+                            href="{% url 'detalle_objeto' objeto.id %}"
+                            class="text-decoration-none"
+                        >
+                            {% if objeto.imagen %}
+                                <img
+                                    src="{{ objeto.imagen.url }}"
+                                    alt="{{ objeto.nombre }}"
+                                    class="objeto-imagen"
+                                >
+                            {% else %}
+                                <div class="objeto-placeholder" aria-hidden="true">
+                                    ⚔️
+                                </div>
+                            {% endif %}
+                        </a>
+
+                        <div class="p-3">
+                            <div class="mb-2">
+                                <span class="badge text-bg-secondary">
+                                    {{ objeto.categoria.nombre }}
+                                </span>
+                            </div>
+
+                            <h5 class="mb-2">
+                                <a
+                                    href="{% url 'detalle_objeto' objeto.id %}"
+                                    class="text-decoration-none text-light"
+                                >
+                                    {{ objeto.nombre }}
+                                </a>
+                            </h5>
+
+                            <p class="text-secondary small mb-2">
+                                Código: {{ objeto.codigo }}
+                            </p>
+
+                            <p class="small">
+                                {{ objeto.descripcion|truncatewords:18 }}
+                            </p>
+
+                            <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                                <span class="precio-game">
+                                    ${{ objeto.precio|floatformat:0 }}
+                                </span>
+
+                                <span class="badge text-bg-success">
+                                    Disponible
+                                </span>
+                            </div>
+
+                            <p class="small text-secondary">
+                                Stock: {{ objeto.stock }}
+                            </p>
+
+                            <a
+                                href="{% url 'detalle_objeto' objeto.id %}"
+                                class="btn btn-outline-light w-100 mb-2"
+                            >
+                                Ver detalles
+                            </a>
+
+                            <form
+                                method="post"
+                                action="{% url 'agregar_carrito' objeto.id %}"
+                            >
+                                {% csrf_token %}
+
+                                <input type="hidden" name="cantidad" value="1">
+
+                                <button type="submit" class="btn btn-game w-100">
+                                    🛒 Añadir al carrito
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {% if objetos.has_other_pages %}
+            <nav class="mt-4" aria-label="Páginas del catálogo">
+                <ul class="pagination justify-content-center paginacion-game">
+
+                    {% if objetos.has_previous %}
+                        <li class="page-item">
+                            <a
+                                class="page-link"
+                                href="?q={{ busqueda|urlencode }}&categoria={{ categoria_seleccionada }}&orden={{ orden_seleccionado }}&page={{ objetos.previous_page_number }}"
+                            >
+                                Anterior
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    <li class="page-item active">
+                        <span class="page-link">
+                            Página {{ objetos.number }} de {{ objetos.paginator.num_pages }}
+                        </span>
+                    </li>
+
+                    {% if objetos.has_next %}
+                        <li class="page-item">
+                            <a
+                                class="page-link"
+                                href="?q={{ busqueda|urlencode }}&categoria={{ categoria_seleccionada }}&orden={{ orden_seleccionado }}&page={{ objetos.next_page_number }}"
+                            >
+                                Siguiente
+                            </a>
+                        </li>
+                    {% endif %}
+
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="sin-resultados">
+            <h2 class="mb-3">No encontramos objetos</h2>
+            <p class="text-secondary mb-4">
+                Prueba con otra búsqueda o categoría.
+            </p>
+            <a href="{% url 'lista_objetos' %}" class="btn btn-game px-4">
+                Ver todos los objetos
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

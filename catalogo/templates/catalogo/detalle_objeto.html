@@ -1,0 +1,136 @@
+{% extends "catalogo/base.html" %}
+
+{% block title %}{{ objeto.nombre }} | GameLoot{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <style>
+        .detalle-panel {
+            background: #1c1729;
+            border: 1px solid #403253;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .detalle-imagen {
+            width: 100%;
+            max-height: 520px;
+            object-fit: contain;
+            background: #171321;
+        }
+
+        .detalle-placeholder {
+            min-height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #171321;
+            font-size: 100px;
+        }
+
+        .detalle-precio {
+            color: #c4b5fd;
+            font-size: 2rem;
+            font-weight: 800;
+        }
+
+        .btn-game {
+            background: #a78bfa;
+            color: #171321;
+            border: 0;
+            font-weight: 700;
+        }
+
+        .btn-game:hover {
+            background: #c4b5fd;
+            color: #171321;
+        }
+    </style>
+
+    <a href="{% url 'lista_objetos' %}" class="btn btn-outline-light mb-4">
+        ← Volver al catálogo
+    </a>
+
+    <div class="detalle-panel">
+        <div class="row g-0">
+
+            <div class="col-12 col-md-6">
+                {% if objeto.imagen %}
+                    <img
+                        src="{{ objeto.imagen.url }}"
+                        alt="{{ objeto.nombre }}"
+                        class="detalle-imagen"
+                    >
+                {% else %}
+                    <div class="detalle-placeholder" aria-hidden="true">
+                        ⚔️
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-12 col-md-6">
+                <div class="p-4 p-lg-5">
+
+                    <span class="badge text-bg-secondary">
+                        {{ objeto.categoria.nombre }}
+                    </span>
+
+                    <h1 class="mt-3">{{ objeto.nombre }}</h1>
+
+                    <p class="text-secondary">
+                        Código: {{ objeto.codigo }}
+                    </p>
+
+                    <div class="detalle-precio my-4">
+                        ${{ objeto.precio|floatformat:0 }}
+                    </div>
+
+                    <h5>Descripción</h5>
+                    <p>{{ objeto.descripcion|linebreaksbr }}</p>
+
+                    {% if disponible %}
+                        <p class="text-success">
+                            <span class="badge text-bg-success">Disponible</span>
+                            Stock: {{ objeto.stock }}
+                        </p>
+
+                        <form
+                            method="post"
+                            action="{% url 'agregar_carrito' objeto.id %}"
+                        >
+                            {% csrf_token %}
+
+                            <label for="cantidad" class="form-label">
+                                Cantidad
+                            </label>
+
+                            <input
+                                id="cantidad"
+                                name="cantidad"
+                                type="number"
+                                class="form-control mb-3"
+                                min="1"
+                                max="{{ objeto.stock }}"
+                                value="1"
+                                required
+                            >
+
+                            <button type="submit" class="btn btn-game w-100">
+                                🛒 Agregar al carrito
+                            </button>
+                        </form>
+                    {% else %}
+                        <p class="text-danger">
+                            Este objeto no está disponible actualmente.
+                        </p>
+                    {% endif %}
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</div>
+{% endblock %}
