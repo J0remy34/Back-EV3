@@ -9,13 +9,13 @@
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
-                {% if formulario.non_field_errors %}
+                {% if form.non_field_errors %}
                     <div class="alert alert-danger">
-                        {{ formulario.non_field_errors }}
+                        {{ form.non_field_errors }}
                     </div>
                 {% endif %}
 
-                {% for campo in formulario %}
+                {% for campo in form %}
                     <div class="mb-3">
                         {% if campo.field.widget.input_type == "checkbox" %}
                             <div class="form-check">
@@ -34,6 +34,7 @@
                             >
                                 {{ campo.label }}
                             </label>
+
                             {{ campo }}
                         {% endif %}
 

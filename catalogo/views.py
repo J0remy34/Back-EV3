@@ -21,7 +21,6 @@ def obtener_rol(usuario):
     if not usuario.is_authenticated:
         return None
 
-    # Los superusuarios existentes conservan acceso de dueño.
     if usuario.is_superuser:
         return "DUENO"
 
@@ -125,7 +124,6 @@ def obtener_carrito(request):
     carrito = request.session.get("carrito", {})
 
     if not isinstance(carrito, dict):
-        carrito = {}
         request.session["carrito"] = {}
         request.session.modified = True
         carrito = {}
@@ -180,6 +178,7 @@ def agregar_carrito(request, objeto_id):
         )
 
     referer = request.META.get("HTTP_REFERER")
+
     if referer:
         return redirect(referer)
 
@@ -262,10 +261,7 @@ def actualizar_carrito(request, objeto_id):
 
     if cantidad <= 0:
         carrito.pop(clave, None)
-        messages.info(
-            request,
-            "Objeto eliminado del carrito.",
-        )
+        messages.info(request, "Objeto eliminado del carrito.")
     elif cantidad > objeto.stock:
         messages.error(
             request,
@@ -289,10 +285,7 @@ def eliminar_carrito(request, objeto_id):
     request.session["carrito"] = carrito
     request.session.modified = True
 
-    messages.success(
-        request,
-        "Objeto eliminado del carrito.",
-    )
+    messages.success(request, "Objeto eliminado del carrito.")
 
     return redirect("ver_carrito")
 
@@ -316,10 +309,7 @@ def login_usuario(request):
         return redirect("lista_objetos")
 
     if request.method == "POST":
-        form = AuthenticationForm(
-            request,
-            data=request.POST,
-        )
+        form = AuthenticationForm(request, data=request.POST)
 
         if form.is_valid():
             usuario = form.get_user()
@@ -362,7 +352,6 @@ def registro_usuario(request):
         form = RegistroUsuarioForm(request.POST)
 
         if form.is_valid():
-            # RegistroUsuarioForm debe crear siempre un CLIENTE.
             form.save()
 
             messages.success(
@@ -394,8 +383,7 @@ def logout_usuario(request):
 
 
 # =========================
-# GESTIÓN DE PRODUCTOS
-# Dueño y administrador
+# GESTIÓN DE OBJETOS
 # =========================
 
 @login_required
@@ -482,6 +470,22 @@ def eliminar_objeto(request, objeto_id):
     messages.success(
         request,
         "Objeto desactivado correctamente.",
+    )
+
+    return redirect("gestionar_objetos")
+
+
+@login_required
+@user_passes_test(es_administrador)
+@require_POST
+def reactivar_objeto(request, objeto_id):
+    objeto = get_object_or_404(Objeto, id=objeto_id)
+    objeto.activo = True
+    objeto.save(update_fields=["activo"])
+
+    messages.success(
+        request,
+        "Objeto reactivado correctamente.",
     )
 
     return redirect("gestionar_objetos")

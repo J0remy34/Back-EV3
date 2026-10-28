@@ -1,4 +1,3 @@
-
 from django.urls import path
 from . import views
 
@@ -43,7 +42,7 @@ urlpatterns = [
         name="vaciar_carrito",
     ),
 
-    # Autenticación de usuarios
+    # Autenticación
     path(
         "login/",
         views.login_usuario,
@@ -60,7 +59,7 @@ urlpatterns = [
         name="logout",
     ),
 
-    # Gestión de objetos (administradores)
+    # Gestión de objetos
     path(
         "gestionar/",
         views.gestionar_objetos,
@@ -80,5 +79,10 @@ urlpatterns = [
         "gestionar/eliminar/<int:objeto_id>/",
         views.eliminar_objeto,
         name="eliminar_objeto",
+    ),
+    path(
+        "gestionar/reactivar/<int:objeto_id>/",
+        views.reactivar_objeto,
+        name="reactivar_objeto",
     ),
 ]
