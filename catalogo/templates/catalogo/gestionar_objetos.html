@@ -2,10 +2,14 @@
 
 {% block content %}
 <div class="container py-4">
+
+    <!-- Encabezado -->
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
         <div>
             <h1>Gestión de objetos</h1>
-            <p class="text-secondary">Administra el catálogo de GameLoot.</p>
+            <p class="text-secondary">
+                Administra el catálogo de GameLoot.
+            </p>
         </div>
 
         <a href="{% url 'crear_objeto' %}" class="btn btn-warning">
@@ -13,9 +17,11 @@
         </a>
     </div>
 
+    <!-- Tabla de objetos -->
     {% if objetos %}
     <div class="table-responsive">
         <table class="table table-dark table-hover align-middle">
+
             <thead>
                 <tr>
                     <th>Código</th>
@@ -38,6 +44,8 @@
                     <td>${{ objeto.precio|floatformat:0 }}</td>
                     <td>{{ objeto.stock }}</td>
                     <td>{{ objeto.get_estado_display }}</td>
+
+                    <!-- Estado de activación -->
                     <td>
                         {% if objeto.activo %}
                             <span class="badge bg-success">Sí</span>
@@ -45,8 +53,12 @@
                             <span class="badge bg-secondary">No</span>
                         {% endif %}
                     </td>
+
+                    <!-- Botones de acciones -->
                     <td>
                         <div class="d-flex flex-wrap gap-2">
+
+                            <!-- Editar -->
                             <a
                                 href="{% url 'editar_objeto' objeto.id %}"
                                 class="btn btn-sm btn-outline-warning"
@@ -54,6 +66,7 @@
                                 Editar
                             </a>
 
+                            <!-- Desactivar o reactivar -->
                             {% if objeto.activo %}
                             <form
                                 method="post"
@@ -61,10 +74,14 @@
                                 onsubmit="return confirm('¿Deseas desactivar este objeto?');"
                             >
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-outline-danger"
+                                >
                                     Desactivar
                                 </button>
                             </form>
+
                             {% else %}
                             <form
                                 method="post"
@@ -72,26 +89,49 @@
                                 onsubmit="return confirm('¿Deseas reactivar este objeto?');"
                             >
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-outline-success"
+                                >
                                     Reactivar
                                 </button>
                             </form>
                             {% endif %}
+
+                            <!-- Eliminar definitivamente -->
+                            <form
+                                method="post"
+                                action="{% url 'eliminar_permanentemente_objeto' objeto.id %}"
+                                onsubmit="return confirm('¿Estás seguro de eliminar definitivamente este objeto? Esta acción no se puede deshacer.');"
+                            >
+                                {% csrf_token %}
+                                <button
+                                    type="submit"
+                                    class="btn btn-sm btn-danger"
+                                >
+                                    Eliminar
+                                </button>
+                            </form>
+
                         </div>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
+
         </table>
     </div>
+
     {% else %}
         <div class="alert alert-secondary">
             Todavía no hay objetos registrados.
         </div>
     {% endif %}
 
+    <!-- Volver al catálogo -->
     <a href="{% url 'lista_objetos' %}" class="btn btn-outline-light mt-3">
         Volver al catálogo
     </a>
+
 </div>
 {% endblock %}

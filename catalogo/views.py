@@ -489,3 +489,27 @@ def reactivar_objeto(request, objeto_id):
     )
 
     return redirect("gestionar_objetos")
+
+
+@login_required
+@user_passes_test(es_administrador)
+@require_POST
+def eliminar_permanentemente_objeto(request, objeto_id):
+    objeto = get_object_or_404(Objeto, id=objeto_id)
+    nombre_objeto = objeto.nombre
+
+    try:
+        objeto.delete()
+    except Exception:
+        messages.error(
+            request,
+            "No se pudo eliminar el objeto. Puede estar relacionado con otros registros.",
+        )
+        return redirect("gestionar_objetos")
+
+    messages.success(
+        request,
+        f"El objeto '{nombre_objeto}' se eliminó definitivamente.",
+    )
+
+    return redirect("gestionar_objetos")

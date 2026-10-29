@@ -3,7 +3,9 @@ from . import views
 
 
 urlpatterns = [
-    # Catálogo de objetos
+    # =========================
+    # CATÁLOGO DE OBJETOS
+    # =========================
     path(
         "",
         views.lista_objetos,
@@ -15,7 +17,9 @@ urlpatterns = [
         name="detalle_objeto",
     ),
 
-    # Carrito de compras
+    # =========================
+    # CARRITO DE COMPRAS
+    # =========================
     path(
         "carrito/",
         views.ver_carrito,
@@ -42,7 +46,9 @@ urlpatterns = [
         name="vaciar_carrito",
     ),
 
-    # Autenticación
+    # =========================
+    # AUTENTICACIÓN
+    # =========================
     path(
         "login/",
         views.login_usuario,
@@ -59,7 +65,9 @@ urlpatterns = [
         name="logout",
     ),
 
-    # Gestión de objetos
+    # =========================
+    # GESTIÓN DE OBJETOS
+    # =========================
     path(
         "gestionar/",
         views.gestionar_objetos,
@@ -84,5 +92,10 @@ urlpatterns = [
         "gestionar/reactivar/<int:objeto_id>/",
         views.reactivar_objeto,
         name="reactivar_objeto",
+    ),
+    path(
+        "gestionar/eliminar-definitivamente/<int:objeto_id>/",
+        views.eliminar_permanentemente_objeto,
+        name="eliminar_permanentemente_objeto",
     ),
 ]
