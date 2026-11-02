@@ -1,4 +1,3 @@
-
 def resumen_carrito(request):
     carrito = request.session.get("carrito", {})
 
